@@ -296,6 +296,14 @@ def train():
     )
     config.use_cache = False
 
+    # if training_args.bf16 is True:
+    #     config.bf16 = True
+    # elif training_args.fp16 is True:
+    #     config.fp16 = True
+    # else:
+    #     config.fp32 = True
+    config.fp32 = True
+
     # Load model and tokenizer
     model = transformers.AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
