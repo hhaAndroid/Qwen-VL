@@ -23,13 +23,14 @@ debug = False
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--model', type=str, default='Qwen/Qwen-VL')  # Qwen/Qwen-VL or Qwen/Qwen-VL-Chat
+    parser.add_argument('--cache-dir', default='../qwen-7b-vl')  # ../qwen-7b-vl or ../qwen-7b-vl-chat
     parser.add_argument('--data-root', type=str, default='cat_dataset')
     parser.add_argument('--data-prefix', type=str, default='images/')
     parser.add_argument(
         '--ann-file', type=str, default='annotations/test.json')
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--num-worker', type=int, default=1)
-    parser.add_argument('--cache-dir', default='../qwen-7b-vl')
     parser.add_argument(
         '--out-dir',
         '-o',
@@ -100,9 +101,9 @@ if __name__ == '__main__':
 
     if not debug:
         model = AutoModelForCausalLM.from_pretrained(
-            'Qwen/Qwen-VL', device_map='cuda', trust_remote_code=True, cache_dir=args.cache_dir).eval()
+            args.model, device_map='cuda', trust_remote_code=True, cache_dir=args.cache_dir).eval()
 
-    tokenizer = AutoTokenizer.from_pretrained('Qwen/Qwen-VL', trust_remote_code=True, cache_dir=args.cache_dir)
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True, cache_dir=args.cache_dir)
     tokenizer.padding_side = 'left'
     tokenizer.pad_token_id = tokenizer.eod_id
 

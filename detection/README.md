@@ -55,4 +55,33 @@ python -m torch.distributed.launch --nproc_per_node=8 evaluate_detection.py --da
 
 性能比较好的原因是数据集比较简单，同时大部分图片里面都是只有一个物体，模型在没有训练过的情况下无法输出多个 bbox。
 
+如果是 chat 模型，则采用如下命令
+
+```shell
+# 单卡
+python evaluate_detection.py --data-root cat_dataset --model Qwen/Qwen-VL-Chat --cache-dir ../qwen-7b-vl-chat
+# 分布式
+python -m torch.distributed.launch --nproc_per_node=8 evaluate_detection.py --data-root cat_dataset --model Qwen/Qwen-VL-Chat --cache-dir ../qwen-7b-vl-chat --launcher pytorch 
+```
+
+```text
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.759
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.931
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.844
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = -1.000
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = -1.000
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.759
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.800
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.800
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.800
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = -1.000
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = -1.000
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.800
+```
+
+## 微调训练
+
+```shell
+pip install peft
+```
 
