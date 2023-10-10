@@ -652,8 +652,12 @@ class QWenModel(QWenPreTrainedModel):
 
         hidden_states = self.drop(hidden_states)
         if images is not None:
+            hs_list = []
             for idx, (i, a, b) in enumerate(img_pos):
-                hidden_states[i][a + 1: b] = images[idx]
+                head = hidden_states[i][:a + 1, :]
+                tail = hidden_states[i][b:, :]
+                hs_list.append(torch.cat([head, images[idx], tail], dim=0))
+            hidden_states = torch.stack(hs_list, dim=0)
         output_shape = input_shape + (hidden_states.size(-1),)
 
         if self.gradient_checkpointing and self.training:
