@@ -1,5 +1,7 @@
 # This code is based on the revised code from fastchat based on tatsu-lab/stanford_alpaca.
 
+import os
+os.environ['HF_MODULES_CACHE'] = './'
 
 from dataclasses import dataclass, field
 import json

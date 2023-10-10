@@ -1,22 +1,31 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from transformers.generation import GenerationConfig
 import torch
 torch.manual_seed(1234)
 
+model_style = 'normal'  # normal lora
+
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen-VL", trust_remote_code=True, cache_dir='./qwen-7b-vl')
 
-# 打开bf16精度，A100、H100、RTX3060、RTX3070等显卡建议启用以节省显存
-# model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-VL", device_map="auto", trust_remote_code=True, bf16=True).eval()
-# 打开fp16精度，V100、P100、T4等显卡建议启用以节省显存
-# model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-VL", device_map="auto", trust_remote_code=True, fp16=True,cache_dir='./qwen-7b-vl').eval()
-model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-VL", device_map="cuda", trust_remote_code=True, cache_dir='./qwen-7b-vl').eval()
-# 使用CPU进行推理，需要约32GB内存
-# model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-VL", trust_remote_code=True, fp16=True, cache_dir='./qwen-7b-vl').eval()
-# 默认gpu进行推理，需要约24GB显存
-# model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-VL", device_map="cuda", trust_remote_code=True).eval()
-
-# 可指定不同的生成长度、top_p等相关超参（transformers 4.32.0及以上无需执行此操作）
-# model.generation_config = GenerationConfig.from_pretrained("Qwen/Qwen-VL", trust_remote_code=True)
+if model_style == 'normal':
+    # 打开bf16精度，A100、H100、RTX3060、RTX3070等显卡建议启用以节省显存
+    # model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-VL", device_map="auto", trust_remote_code=True, bf16=True).eval()
+    # 打开fp16精度，V100、P100、T4等显卡建议启用以节省显存
+    # model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-VL", device_map="auto", trust_remote_code=True, fp16=True,cache_dir='./qwen-7b-vl').eval()
+    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-VL", device_map="cuda", trust_remote_code=True, cache_dir='./qwen-7b-vl').eval()
+    # 使用CPU进行推理，需要约32GB内存
+    # model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-VL", trust_remote_code=True, fp16=True, cache_dir='./qwen-7b-vl').eval()
+    # 默认gpu进行推理，需要约24GB显存
+    # model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-VL", device_map="cuda", trust_remote_code=True).eval()
+elif model_style == 'lora':
+    from peft import AutoPeftModelForCausalLM
+    model = AutoPeftModelForCausalLM.from_pretrained(
+        'detection/output_qwen',
+        device_map="cuda",
+        cache_dir='./qwen-7b-vl',
+        trust_remote_code=True
+    ).eval()
+else:
+    raise NotImplementedError()
 
 query = tokenizer.from_list_format([
     {'image': 'https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/demo.jpeg'}, # Either a local path or an url

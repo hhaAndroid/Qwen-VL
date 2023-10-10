@@ -82,6 +82,69 @@ python -m torch.distributed.launch --nproc_per_node=8 evaluate_detection.py --da
 ## 微调训练
 
 ```shell
-pip install peft
+pip install peft deepspeed
 ```
+
+deepspeed 在第一次运行时候会编译 cuda op，因此需要提前设置好 CUDA_HOME ncvv 和 gcc 否则会报错
+
+**(1) 生成 jsonl 对话格式数据**
+
+```shell
+python create_chat_data.py
+```
+
+**(2) 开启训练**
+
+```shell
+sh finetune_lora_ds.sh
+```
+
+官方代码直接跑会报错：
+
+```text
+    hidden_states[i][a + 1 : b] = images[idx]
+RuntimeError: a view of a leaf Variable that requires grad is being used in an in-place operation.
+```
+
+需要对代码进行修改，但是因为用的是远程代码，为啥使得修改后代码生效同时方便 debug，可以把运行时候缓存的数据换个位置
+
+在 `finetune.py` 代码最前面加上
+
+```python
+import os
+os.environ['HF_MODULES_CACHE'] = './'
+```        
+
+然后就可以手动修改 `transformers_modules/Qwen/Qwen-VL-Chat/2562bb20c375615e99b422d425066af6939d165e/modeling_qwen.py` 内部代码。
+
+将 655 行代码修改，错误原因是不允许这样直接 inplace。
+
+```python
+if images is not None:
+    hs_list = []
+    for idx, (i, a, b) in enumerate(img_pos):
+        head = hidden_states[i][:a + 1, :]
+        tail = hidden_states[i][b:, :]
+        hs_list.append(torch.cat([head, images[idx], tail], dim=0))
+    hidden_states = torch.stack(hs_list, dim=0)
+```
+
+模型训练完成后会在当前 detection 路径中生成一个 `output_qwen` 文件夹，内部是 lora 权重和对应配置
+
+## 微调后推理
+
+单张图片可视化直接运行 ../qwen-vl.py 和 ../qwen-vl-chat.py 即可，修改内部的 model_style 参数即可
+
+评估脚本如下：
+
+```shell
+# 单卡
+python evaluate_detection.py --data-root cat_dataset --model output_qwen --model-style lora --cache-dir ../qwen-7b-vl-chat
+# 分布式
+python -m torch.distributed.launch --nproc_per_node=8 evaluate_detection.py --data-root cat_dataset --model output_qwen --model-style lora --cache-dir ../qwen-7b-vl-chat --launcher pytorch 
+```
+
+
+
+
 

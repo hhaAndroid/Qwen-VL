@@ -25,6 +25,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, default='Qwen/Qwen-VL')  # Qwen/Qwen-VL or Qwen/Qwen-VL-Chat
     parser.add_argument('--cache-dir', default='../qwen-7b-vl')  # ../qwen-7b-vl or ../qwen-7b-vl-chat
+    parser.add_argument('--model-style', default='normal')  # normal lora
     parser.add_argument('--data-root', type=str, default='cat_dataset')
     parser.add_argument('--data-prefix', type=str, default='images/')
     parser.add_argument(
@@ -100,8 +101,19 @@ if __name__ == '__main__':
     torch.cuda.set_device(int(os.getenv('LOCAL_RANK', 0)))
 
     if not debug:
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model, device_map='cuda', trust_remote_code=True, cache_dir=args.cache_dir).eval()
+        if args.model_style == 'normal':
+            model = AutoModelForCausalLM.from_pretrained(
+                args.model, device_map='cuda', trust_remote_code=True, cache_dir=args.cache_dir).eval()
+        elif args.model_style == 'lora':
+            from peft import AutoPeftModelForCausalLM
+            model = AutoPeftModelForCausalLM.from_pretrained(
+                args.model,
+                device_map="cuda",
+                cache_dir=args.cache_dir,
+                trust_remote_code=True
+            ).eval()
+        else:
+            raise NotImplementedError()
 
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True, cache_dir=args.cache_dir)
     tokenizer.padding_side = 'left'

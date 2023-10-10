@@ -72,7 +72,7 @@ if __name__ == '__main__':
     # 转换为 jsonl 格式保存
     out_datas = []
     text = 'Please locate all the cat'
-    prompt = 'Picture 1: <img>{}\n<ref>{}</ref><box>'
+    prompt = 'Picture 1: <img>{}</img>\n<ref>{}</ref><box>'
 
     for i, result in enumerate(results):
         out_dict = {'id': f"identity_{i}"}

@@ -22,7 +22,7 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
-torchrun $DISTRIBUTED_ARGS finetune.py \
+torchrun $DISTRIBUTED_ARGS ../finetune.py \
     --model_name_or_path $MODEL \
     --cache_dir $CACHE_DIR \
     --data_path $DATA \
