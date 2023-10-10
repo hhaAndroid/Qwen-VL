@@ -21,7 +21,13 @@ unzip cat_dataset.zip -d cat_dataset
 rm -rf cat_dataset.zip
 ```
 
-在准备好数据集后，可以开始进行评估
+在准备好数据集后，因为这个数据集在 pillow 读取时候会出现宽高反的情况，直接评估性能会很低，因此需要先对数据集进行简单处理
+
+```shell
+python process_data.py
+```
+
+然后就可以开始进行评估
 
 ```shell
 # 单卡
