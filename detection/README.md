@@ -25,9 +25,9 @@ rm -rf cat_dataset.zip
 
 ```shell
 # 单卡
-python evaluate_detection.py cat_dataset
+python evaluate_detection.py --data-root cat_dataset
 # 分布式
-python -m torch.distributed.launch --nproc_per_node=8 evaluate_detection.py cat_dataset --launcher pytorch 
+python -m torch.distributed.launch --nproc_per_node=8 evaluate_detection.py --data-root cat_dataset --launcher pytorch 
 ```
 
 运行完会输出 mAP 同时会在 outputs 里面保存一个 `test_pred.json`，你可以使用 `browse_coco_json.py` 脚本可视化分析效果
