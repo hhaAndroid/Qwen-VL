@@ -27,6 +27,7 @@ torchrun $DISTRIBUTED_ARGS ../finetune.py \
     --cache_dir $CACHE_DIR \
     --data_path $DATA \
     --bf16 True \
+    --use_chat True \
     --fix_vit True \
     --output_dir output_qwen \
     --num_train_epochs 5 \

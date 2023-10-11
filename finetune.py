@@ -294,12 +294,14 @@ def make_supervised_data_module(
     )
     rank0_print("Loading data...")
 
+    if data_args.use_chat is False:
+        print('使用非 chat 版本')
     train_json = json.load(open(data_args.data_path, "r"))
-    train_dataset = dataset_cls(train_json, tokenizer=tokenizer, max_len=max_len)
+    train_dataset = dataset_cls(train_json, tokenizer=tokenizer, max_len=max_len, use_chat=data_args.use_chat)
 
     if data_args.eval_data_path:
         eval_json = json.load(open(data_args.eval_data_path, "r"))
-        eval_dataset = dataset_cls(eval_json, tokenizer=tokenizer, max_len=max_len)
+        eval_dataset = dataset_cls(eval_json, tokenizer=tokenizer, max_len=max_len, use_chat=data_args.use_chat)
     else:
         eval_dataset = None
 
