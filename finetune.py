@@ -324,12 +324,6 @@ def train():
     if getattr(training_args, 'deepspeed', None) and getattr(lora_args, 'q_lora', False):
         training_args.distributed_state.distributed_type = DistributedType.DEEPSPEED
 
-    compute_dtype = (
-        torch.float16
-        if training_args.fp16
-        else (torch.bfloat16 if training_args.bf16 else torch.float32)
-    )
-
     local_rank = training_args.local_rank
 
     device_map = None
@@ -375,6 +369,7 @@ def train():
     if not training_args.use_lora:
         if training_args.fix_vit and hasattr(model, 'transformer') and hasattr(model.transformer, 'visual'):
             model.transformer.visual.requires_grad_(False)
+            # 这个模块始终要训练
             if hasattr(model.transformer.visual, 'attn_pool'):
                 model.transformer.visual.attn_pool.requires_grad_(True)
     tokenizer = transformers.AutoTokenizer.from_pretrained(
@@ -388,10 +383,16 @@ def train():
     tokenizer.pad_token_id = tokenizer.eod_id
 
     if training_args.use_lora:
-        if lora_args.q_lora or "chat" in model_args.model_name_or_path.lower():
-            modules_to_save = None
-        else:
-            modules_to_save = ["wte", "lm_head"]
+        # chat 版本额外训练了 <|im_start|> 和 <|im_end|> 这两个 token，用户对话的
+        # 如果想微调非 chat 版本，但是你用了这两个 token，那么就需要设置 modules_to_save = ["wte", "lm_head"]
+        # 让 embedding 和 输出层可以训练，会增加很多显存。但是如果我非 chat 版本微调和推理中都不存在这两个，那么就也不需要
+        # 因此这里设置为 None
+        # if lora_args.q_lora or "chat" in model_args.model_name_or_path.lower():
+        #     modules_to_save = None
+        # else:
+        #     modules_to_save = ["wte", "lm_head"]
+        modules_to_save = None
+
         lora_config = LoraConfig(
             r=lora_args.lora_r,
             lora_alpha=lora_args.lora_alpha,
@@ -399,6 +400,7 @@ def train():
             lora_dropout=lora_args.lora_dropout,
             bias=lora_args.lora_bias,
             task_type="CAUSAL_LM",
+            # 除了LoRA 层之外的模块列表,要设置为可训练并保存在最终检查点中。这些通常包括模型的自定义头,该头是为微调任务随机初始化的
             modules_to_save=modules_to_save  # This argument serves for adding new tokens.
         )
         if lora_args.q_lora:

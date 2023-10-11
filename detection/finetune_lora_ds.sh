@@ -8,8 +8,10 @@ NODE_RANK=0
 MASTER_ADDR=localhost
 MASTER_PORT=6001
 
-MODEL="Qwen/Qwen-VL-Chat" #"Qwen/Qwen-VL-Chat"/"Qwen/Qwen-VL"  Set the path if you do not want to load from huggingface directly
-CACHE_DIR='../qwen-7b-vl-chat'
+MODEL="Qwen/Qwen-VL" #"Qwen/Qwen-VL-Chat"/"Qwen/Qwen-VL"  Set the path if you do not want to load from huggingface directly
+CACHE_DIR='../qwen-7b-vl'
+USE_CHAT=False
+
 # ATTENTION: specify the path to your training data, which should be a json file consisting of a list of conversations.
 # See the section for finetuning in README for more information.
 DATA="cat_chat.jsonl"
@@ -27,10 +29,10 @@ torchrun $DISTRIBUTED_ARGS ../finetune.py \
     --cache_dir $CACHE_DIR \
     --data_path $DATA \
     --bf16 True \
-    --use_chat True \
+    --use_chat $USE_CHAT \
     --fix_vit True \
     --output_dir output_qwen \
-    --num_train_epochs 5 \
+    --num_train_epochs 25 \
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 1 \
     --gradient_accumulation_steps 8 \

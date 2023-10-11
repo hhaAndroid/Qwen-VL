@@ -144,6 +144,13 @@ python evaluate_detection.py --data-root cat_dataset --model output_qwen --model
 python -m torch.distributed.launch --nproc_per_node=8 evaluate_detection.py --data-root cat_dataset --model output_qwen --model-style lora --cache-dir ../qwen-7b-vl-chat --launcher pytorch 
 ```
 
+## 微调非 chat 模型
+
+现在已经支持了非 chat 格式和模型微调。需要注意：
+
+chat 版本额外训练了 <|im_start|> 和 <|im_end|> 这两个 token，用户对话的，如果想微调非 chat 版本，但是你用了这两个 token，那么就需要设置 modules_to_save = ["wte", "lm_head"]，让 embedding 和 输出层可以训练，会增加很多显存。但是如果我非 chat 版本微调和推理中都不存在这两个，那么就也不需要
+
+因此我们修改了 finetune 脚本。
 
 
 
