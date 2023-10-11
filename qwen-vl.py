@@ -31,6 +31,13 @@ query = tokenizer.from_list_format([
     {'image': 'https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/demo.jpeg'}, # Either a local path or an url
     {'text': 'Generate the caption in English with grounding:'},
 ])
+
+# query = tokenizer.from_list_format([
+#     {'image': 'detection/cat_dataset/images/IMG_20210716_183123-02.jpeg'}, # Either a local path or an url
+#     {'text': '<ref>Please locate all the cat</ref>'},
+# ])
+# Picture 1:<img>detection/cat_dataset/images/IMG_20210716_183123-02.jpeg</img>
+# <ref>Please locate all the cat</ref>
 inputs = tokenizer(query, return_tensors='pt')
 inputs = inputs.to(model.device)
 pred = model.generate(**inputs)

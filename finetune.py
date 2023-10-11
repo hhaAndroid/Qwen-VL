@@ -36,6 +36,7 @@ class DataArguments:
         default=None, metadata={"help": "Path to the evaluation data."}
     )
     lazy_preprocess: bool = False
+    use_chat: bool = True
 
 
 @dataclass

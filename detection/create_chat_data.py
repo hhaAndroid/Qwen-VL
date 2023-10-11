@@ -72,7 +72,7 @@ if __name__ == '__main__':
     # 转换为 jsonl 格式保存
     out_datas = []
     text = 'Please locate all the cat'
-    prompt = 'Picture 1: <img>{}</img>\n<ref>{}</ref><box>'
+    prompt = 'Picture 1:<img>{}</img>\n<ref>{}</ref>'
 
     for i, result in enumerate(results):
         out_dict = {'id': f"identity_{i}"}
@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
         gt_bbox_0 = result['bboxes'][0]
 
-        target_value = f'({gt_bbox_0[0]},{gt_bbox_0[1]}),({gt_bbox_0[2]},{gt_bbox_0[3]})</box>'
+        target_value = f'<box>({gt_bbox_0[0]},{gt_bbox_0[1]}),({gt_bbox_0[2]},{gt_bbox_0[3]})</box>'
         for bbox in result['bboxes'][1:]:
             target_value += f'<box>({bbox[0]},{bbox[1]}),({bbox[2]},{bbox[3]})</box>'
 

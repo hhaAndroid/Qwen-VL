@@ -119,7 +119,7 @@ if __name__ == '__main__':
     tokenizer.padding_side = 'left'
     tokenizer.pad_token_id = tokenizer.eod_id
 
-    prompt = '<img>{}</img><ref>{}</ref><box>'
+    prompt = 'Picture 1:<img>{}</img>\n<ref>{}</ref>'
 
     coco = COCO(os.path.join(args.data_root, args.ann_file))
     coco_dataset = SimpleDataset(args.data_root, args.data_prefix, coco, tokenizer, prompt)
