@@ -367,9 +367,9 @@ def train():
     )
 
     if not training_args.use_lora:
+        # 第三阶段全量微调，vit 模型固定，只需要语言模型和 vit adapter 部分
         if training_args.fix_vit and hasattr(model, 'transformer') and hasattr(model.transformer, 'visual'):
             model.transformer.visual.requires_grad_(False)
-            # 这个模块始终要训练
             if hasattr(model.transformer.visual, 'attn_pool'):
                 model.transformer.visual.attn_pool.requires_grad_(True)
     tokenizer = transformers.AutoTokenizer.from_pretrained(
@@ -412,6 +412,8 @@ def train():
 
         if training_args.gradient_checkpointing:
             model.enable_input_require_grads()
+
+    rank0_print(model)
 
     # Load data
     data_module = make_supervised_data_module(

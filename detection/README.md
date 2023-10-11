@@ -39,18 +39,18 @@ python -m torch.distributed.launch --nproc_per_node=8 evaluate_detection.py --da
 运行完会输出 mAP 同时会在 outputs 里面保存一个 `test_pred.json`，你可以使用 `browse_coco_json.py` 脚本可视化分析效果
 
 ```text
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.766
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.770
  Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.931
  Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.844
  Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = -1.000
  Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = -1.000
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.766
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.800
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.800
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.800
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.770
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.807
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.807
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.807
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = -1.000
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = -1.000
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.800
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.807
 ```
 
 性能比较好的原因是数据集比较简单，同时大部分图片里面都是只有一个物体，模型在没有训练过的情况下无法输出多个 bbox。
@@ -65,21 +65,149 @@ python -m torch.distributed.launch --nproc_per_node=8 evaluate_detection.py --da
 ```
 
 ```text
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.759
- Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.931
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.762
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.890
  Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.844
  Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = -1.000
  Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = -1.000
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.759
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.800
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.800
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.800
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.762
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.803
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.803
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.803
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = -1.000
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = -1.000
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.800
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.803
 ```
 
+可以测试下训练集，方便后面查看是否能过拟合掉
+
+```shell
+# 单卡
+python evaluate_detection.py --data-root cat_dataset --model Qwen/Qwen-VL-Chat --cache-dir ../qwen-7b-vl-chat --ann-file annotations/trainval.json
+# 分布式
+python -m torch.distributed.launch --nproc_per_node=8 evaluate_detection.py --data-root cat_dataset --model Qwen/Qwen-VL-Chat --cache-dir ../qwen-7b-vl-chat --launcher pytorch --ann-file annotations/trainval.json
+```
+
+
 ## 微调训练
+
+如果是 lora 训练，那么会新增如下结构：
+
+**c_attn, c_proj w1 和 w2** 这 4 个线性层要新增。有 lora_ 开头的表示是要训练的模型。可以发现只是语言模型的 attention 部分进行了训练，vit 和 adapter 都没有训练。全量时候 vit 也不训练，其他都训练。
+
+```text
+PeftModelForCausalLM(
+  (base_model): LoraModel(
+    (model): QWenLMHeadModel(
+      (transformer): QWenModel(
+        (wte): Embedding(151936, 4096)
+        (drop): Dropout(p=0.0, inplace=False)
+        (rotary_emb): RotaryEmbedding()
+        (h): ModuleList(
+          (0-31): 32 x QWenBlock(
+            (ln_1): RMSNorm()
+            (attn): QWenAttention(
+              (c_attn): Linear(
+                in_features=4096, out_features=12288, bias=True
+                (lora_dropout): ModuleDict(
+                  (default): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=4096, out_features=64, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=64, out_features=12288, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (c_proj): Linear(
+                in_features=4096, out_features=4096, bias=False
+                (lora_dropout): ModuleDict(
+                  (default): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=4096, out_features=64, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=64, out_features=4096, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (attn_dropout): Dropout(p=0.0, inplace=False)
+            )
+            (ln_2): RMSNorm()
+            (mlp): QWenMLP(
+              (w1): Linear(
+                in_features=4096, out_features=11008, bias=False
+                (lora_dropout): ModuleDict(
+                  (default): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=4096, out_features=64, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=64, out_features=11008, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (w2): Linear(
+                in_features=4096, out_features=11008, bias=False
+                (lora_dropout): ModuleDict(
+                  (default): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (default): Linear(in_features=4096, out_features=64, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (default): Linear(in_features=64, out_features=11008, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (c_proj): Linear(in_features=11008, out_features=4096, bias=False)
+            )
+          )
+        )
+        (ln_f): RMSNorm()
+        (visual): VisionTransformer(
+          (conv1): Conv2d(3, 1664, kernel_size=(14, 14), stride=(14, 14), bias=False)
+          (ln_pre): LayerNorm((1664,), eps=1e-06, elementwise_affine=True)
+          (transformer): TransformerBlock(
+            (resblocks): ModuleList(
+              (0-47): 48 x VisualAttentionBlock(
+                (ln_1): LayerNorm((1664,), eps=1e-06, elementwise_affine=True)
+                (ln_2): LayerNorm((1664,), eps=1e-06, elementwise_affine=True)
+                (attn): VisualAttention(
+                  (in_proj): Linear(in_features=1664, out_features=4992, bias=True)
+                  (out_proj): Linear(in_features=1664, out_features=1664, bias=True)
+                )
+                (mlp): Sequential(
+                  (c_fc): Linear(in_features=1664, out_features=8192, bias=True)
+                  (gelu): GELU(approximate='none')
+                  (c_proj): Linear(in_features=8192, out_features=1664, bias=True)
+                )
+              )
+            )
+          )
+          (attn_pool): Resampler(
+            (kv_proj): Linear(in_features=1664, out_features=4096, bias=False)
+            (attn): MultiheadAttention(
+              (out_proj): NonDynamicallyQuantizableLinear(in_features=4096, out_features=4096, bias=True)
+            )
+            (ln_q): LayerNorm((4096,), eps=1e-06, elementwise_affine=True)
+            (ln_kv): LayerNorm((4096,), eps=1e-06, elementwise_affine=True)
+          )
+          (ln_post): LayerNorm((4096,), eps=1e-06, elementwise_affine=True)
+        )
+      )
+      (lm_head): Linear(in_features=4096, out_features=151936, bias=False)
+    )
+  )
+)
+```
 
 ```shell
 pip install peft deepspeed
@@ -151,7 +279,3 @@ python -m torch.distributed.launch --nproc_per_node=8 evaluate_detection.py --da
 chat 版本额外训练了 <|im_start|> 和 <|im_end|> 这两个 token，用户对话的，如果想微调非 chat 版本，但是你用了这两个 token，那么就需要设置 modules_to_save = ["wte", "lm_head"]，让 embedding 和 输出层可以训练，会增加很多显存。但是如果我非 chat 版本微调和推理中都不存在这两个，那么就也不需要
 
 因此我们修改了 finetune 脚本。
-
-
-
-
